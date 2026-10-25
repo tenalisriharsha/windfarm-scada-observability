@@ -1,0 +1,92 @@
+services:
+  simulator:
+    build:
+      context: .
+      dockerfile: docker/simulator.Dockerfile
+    container_name: windfarm-simulator
+    command:
+      [
+        "--turbines", "10",
+        "--modbus-host", "0.0.0.0",
+        "--modbus-port", "5020",
+        "--control-host", "0.0.0.0",
+        "--control-port", "8080",
+        "--seed", "42",
+      ]
+    ports:
+      - "5020:5020"
+      - "8080:8080"
+
+  collector:
+    build:
+      context: .
+      dockerfile: docker/collector.Dockerfile
+    container_name: windfarm-collector
+    command:
+      [
+        "--turbines", "10",
+        "--modbus-host", "simulator",
+        "--modbus-port", "5020",
+        "--metrics-host", "0.0.0.0",
+        "--metrics-port", "9200",
+        "--poll-interval", "5",
+        "--stale-after", "15",
+      ]
+    depends_on:
+      - simulator
+    ports:
+      - "9200:9200"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: windfarm-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/windfarm.rules.yml:/etc/prometheus/rules/windfarm.rules.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - collector
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: windfarm-alertmanager
+    volumes:
+      - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: windfarm-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  loki:
+    image: grafana/loki:latest
+    container_name: windfarm-loki
+    volumes:
+      - ./docker/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: windfarm-promtail
+    volumes:
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["-config.file=/etc/promtail/config.yml"]
+    depends_on:
+      - loki

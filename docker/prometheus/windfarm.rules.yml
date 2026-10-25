@@ -1,0 +1,32 @@
+groups:
+  - name: windfarm
+    rules:
+      - alert: TurbineOverspeed
+        expr: windfarm_turbine_status_code == 2
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Turbine {{ $labels.turbine_id }} is overspeeding"
+          description: "Turbine {{ $labels.turbine_id }} has reported FAULT_OVERSPEED (status_code=2) for at least 10s."
+          runbook_url: "https://github.com/tenalisriharsha/windfarm-scada-observability/blob/main/docs/runbooks/turbine-overspeed.md"
+
+      - alert: TurbineGearboxOverheat
+        expr: windfarm_turbine_status_code == 3
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Turbine {{ $labels.turbine_id }} gearbox is overheating"
+          description: "Turbine {{ $labels.turbine_id }} has reported FAULT_OVERHEAT (status_code=3) for at least 10s."
+          runbook_url: "https://github.com/tenalisriharsha/windfarm-scada-observability/blob/main/docs/runbooks/turbine-gearbox-overheat.md"
+
+      - alert: TurbineSilent
+        expr: windfarm_turbine_up == 0
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Turbine {{ $labels.turbine_id }} is not responding"
+          description: "The collector has been unable to successfully poll turbine {{ $labels.turbine_id }} for at least 15s."
+          runbook_url: "https://github.com/tenalisriharsha/windfarm-scada-observability/blob/main/docs/runbooks/turbine-silent.md"
