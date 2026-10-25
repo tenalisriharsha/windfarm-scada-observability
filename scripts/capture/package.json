@@ -1,0 +1,8 @@
+{
+  "name": "windfarm-capture",
+  "private": true,
+  "type": "module",
+  "description": "Regenerates docs/screenshots by running the real stack and commands.",
+  "scripts": { "capture": "node capture-screenshots.mjs" },
+  "devDependencies": { "playwright-core": "^1.49.0" }
+}

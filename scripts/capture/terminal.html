@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #0b0e14; }
+  .win { width: 1040px; box-sizing: border-box; background: #0f131c; border: 1px solid #262c3a; border-radius: 10px; overflow: hidden;
+         font-family: "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #181d2a; border-bottom: 1px solid #262c3a; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .title { margin-left: 8px; color: #8b93a7; font-size: 12.5px; }
+  .exit { margin-left: auto; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+  .exit.ok { color: #7ee2a8; background: #123324; } .exit.bad { color: #ffb4a8; background: #3a1a17; }
+  pre { margin: 0; padding: 16px 18px 20px; color: #d6dbe8; font: 13.5px/1.5 "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+        white-space: pre-wrap; word-break: break-all; }
+  .p { color: #7ee2a8; } .c { color: #ffffff; font-weight: 600; }
+</style>
+<div class="win" id="win">
+  <div class="bar"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+    <span class="title" id="title"></span><span class="exit" id="exit"></span></div>
+  <pre id="body"></pre>
+</div>
