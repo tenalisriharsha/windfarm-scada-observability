@@ -1,3 +1,4 @@
+import pytest
 from prometheus_client import CollectorRegistry
 
 from windfarm.collector.config import CollectorConfig, TurbineTarget
@@ -93,7 +94,7 @@ async def test_refresh_staleness_flips_up_to_zero_after_threshold_without_a_new_
 
     poller.refresh_staleness(now=success_time + 11.0)
     assert registry.get_sample_value("windfarm_turbine_up", {"turbine_id": "1"}) == 0.0
-    assert registry.get_sample_value("windfarm_turbine_last_seen_age_seconds", {"turbine_id": "1"}) == 11.0
+    assert registry.get_sample_value("windfarm_turbine_last_seen_age_seconds", {"turbine_id": "1"}) == pytest.approx(11.0)
 
 
 async def test_poller_never_calls_a_write_method():
