@@ -147,51 +147,42 @@ collector experiences a genuine client-side timeout, not a fabricated error.
       dashboard, injects an overspeed fault, polls Alertmanager until it
       fires, clears the fault, tears down with no containers left behind.
 
-### Phase 4 — Previews, polish, final docs
-- [ ] Playwright captures of the Grafana dashboard: healthy farm, then with
-      an injected overspeed fault.
-- [ ] Playwright capture of the Alertmanager page showing a firing alert.
-- [ ] Terminal captures of the simulator, the collector, and the scale test,
-      from real runs (no hand-edited output).
-- [ ] At least 4-5 verified screenshots in `docs/screenshots/`, embedded in
-      a Preview section near the top of `README.md`.
-- [ ] Final README pass: quick start, preview, status, license.
-- [ ] `DAILY_REPORT.md`.
-- [ ] `STATUS: COMPLETE` once everything above is true, tested, and
-      documented.
+### Phase 4 — Previews, polish, final docs — DONE
+- [x] Playwright captures of the Grafana "Windfarm Overview" dashboard
+      against a real, running `docker compose` stack: a healthy 10/10
+      farm with zero faults, and the same dashboard with a real overspeed
+      fault injected on turbine 2 via the control API (rotor-speed spike,
+      red "OVERSPEED" band on the status-code panel, fault counter at 1).
+- [x] Playwright capture of the Alertmanager UI (`http://localhost:9093`)
+      with the `TurbineOverspeed` alert `active` and its Info panel
+      expanded, showing the description, runbook link, and summary
+      annotations from the alert rule.
+- [x] Terminal captures from real process runs, rendered into a dark
+      terminal-style HTML template and screenshotted (no hand-typed or
+      edited output): the simulator CLI starting a 5-turbine Modbus TCP
+      server, the collector CLI starting up, polling, and a `curl` of its
+      live `/metrics` output, and `scripts/perf_test.py` producing its
+      real JSON summary (15 turbines, 8s windows).
+- [x] Every screenshot opened and visually checked before embedding; the
+      first Grafana capture and the first Alertmanager capture were
+      re-taken after leaving excess blank space or a clipped panel.
+- [x] 6 screenshots in `docs/screenshots/`, embedded in a "Preview"
+      section near the top of `README.md`.
+- [x] Final README pass: Preview section up top, quick start, "How it
+      works", a short factual Status section near the bottom, License.
+      No build-diary language.
+- [x] `DAILY_REPORT.md` written, summarizing all 4 sessions, test
+      results, known limitations, and future ideas.
+- [x] Full stack (`docker compose up -d --build`) verified healthy
+      during screenshot capture, fault injected and cleared, stack torn
+      down afterwards with no containers left behind.
+- [x] Full unit test suite re-run clean: 57 passed.
 
 ## Resume point
 
-**Start of session 4: Phase 4** -- previews, polish, final docs. This is
-the last session; everything must end COMPLETE.
+Project complete -- nothing left to resume. All 4 phases are done, the
+full test suite is green, the compose smoke test passes, the README has
+a verified Preview section, and `DAILY_REPORT.md` is written. Future
+work ideas are listed in `DAILY_REPORT.md`'s "Ideas for more" section.
 
-1. Capture the Grafana "Windfarm Overview" dashboard with Playwright:
-   once showing a healthy farm, once with an injected overspeed fault
-   visible on the per-turbine panels (`docker compose up -d --build`,
-   wait for provisioning the same way `scripts/compose_smoke_test.sh`
-   does, inject via the control API, screenshot, clear the fault, tear
-   down).
-2. Capture the Alertmanager UI (`http://localhost:9093`) showing the
-   `TurbineOverspeed` alert `active`.
-3. Capture terminal output from real runs (not hand-typed) for: the
-   simulator CLI starting up, the collector CLI starting up and polling,
-   and `scripts/perf_test.py` producing its JSON summary -- render each
-   into a dark terminal-style HTML template and screenshot that, per the
-   project rules (exact command in the prompt line, no edited output,
-   `... (output truncated)` for anything abridged).
-4. Look at every screenshot before embedding it; re-capture anything
-   blank, broken, or showing an error overlay.
-5. Add a "Preview" section near the top of `README.md` embedding all of
-   them (at least 4-5, more if there are genuinely distinct views worth
-   showing), then do a final README pass: quick start, preview, a short
-   factual Status section near the bottom, license. No build-diary
-   language ("tonight", "session N", etc.) -- that belongs in this file.
-6. Write `DAILY_REPORT.md` summarizing all 4 sessions: what was built,
-   test results, known limitations (see `docs/performance.md`'s
-   Limitations section and `docs/ot-security.md`'s closing section for
-   source material), future ideas.
-7. Set `STATUS: COMPLETE` below once the full test suite is green, the
-   compose smoke test passes, README is final with Preview section in
-   place, and `DAILY_REPORT.md` exists.
-
-STATUS: IN_PROGRESS
+STATUS: COMPLETE
