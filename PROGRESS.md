@@ -84,18 +84,39 @@ collector experiences a genuine client-side timeout, not a fabricated error.
       collector's exported Prometheus metrics within one poll cycle.
 - [x] 51 tests passing, no flakiness across repeated runs.
 
-### Phase 2 — Observability stack (docker-compose)
-- [ ] Dockerfiles for the simulator and collector.
-- [ ] `docker-compose.yml` wiring simulator + collector + Prometheus +
-      Grafana + Alertmanager + Loki + Promtail.
-- [ ] Prometheus scrape config targeting the collector's `/metrics`.
-- [ ] Grafana dashboard provisioned as code (datasource + dashboard JSON via
-      provisioning, not clicked together by hand).
-- [ ] Alertmanager: 3 rules (overspeed, high gearbox temperature, turbine
-      silent), each annotated with a runbook link.
-- [ ] One runbook markdown file per alert under `docs/runbooks/`.
-- [ ] Verify against a running stack: metrics flow end to end, and each
-      alert can be made to fire by injecting the matching fault.
+### Phase 2 — Observability stack (docker-compose) — DONE
+- [x] Dockerfiles for the simulator and collector (`docker/simulator.Dockerfile`,
+      `docker/collector.Dockerfile`; plain `python:3.12-slim` + `pip install .`,
+      no compiled deps).
+- [x] `docker-compose.yml` wiring simulator + collector + Prometheus +
+      Grafana + Alertmanager + Loki + Promtail, defaulted to 10 turbines
+      for fast local iteration.
+- [x] Prometheus scrape config targeting the collector's `/metrics`
+      (`docker/prometheus/prometheus.yml`).
+- [x] Grafana dashboard provisioned as code: datasource provisioning
+      (Prometheus + Loki) and one dashboard JSON
+      (`docker/grafana/provisioning/dashboards/json/windfarm-overview.json`)
+      with farm-level stats, per-turbine rotor speed/gearbox temp/wind
+      speed/staleness timeseries, and a status-code state timeline.
+      Nothing clicked together by hand.
+- [x] Alertmanager: 3 rules in `docker/prometheus/windfarm.rules.yml`
+      (`TurbineOverspeed`, `TurbineGearboxOverheat`, `TurbineSilent`),
+      each annotated with a `runbook_url`.
+- [x] One runbook markdown file per alert under `docs/runbooks/`
+      (`turbine-overspeed.md`, `turbine-gearbox-overheat.md`,
+      `turbine-silent.md`), each with what the alert means on a real
+      site and concrete triage steps using this repo's control API.
+- [x] Verified against a real running stack (`docker compose up -d --build`,
+      7 containers): collector metrics scraped by Prometheus, dashboard
+      auto-provisioned in Grafana, Loki receiving container logs via
+      Promtail. Injected overspeed, overheating, and comm-loss faults in
+      turn and watched all three alerts move from Prometheus `pending` to
+      `firing` to Alertmanager `active`, then clear on fault removal.
+- [x] `scripts/compose_smoke_test.sh`: automates the above (build, wait for
+      a healthy Prometheus target and provisioned dashboard, inject an
+      overspeed fault, poll Alertmanager until it fires, clear the fault,
+      tear down). Runs clean -- no containers left behind on success or
+      failure (`trap cleanup EXIT`). This will be the Phase 3 CI gate.
 
 ### Phase 3 — Performance test, OT-security note, CI
 - [ ] 50-turbine performance test script: measures poll latency percentiles
@@ -124,13 +145,18 @@ collector experiences a genuine client-side timeout, not a fabricated error.
 
 ## Resume point
 
-**Start of session 2: Phase 2, item 1** -- write Dockerfiles for the
-simulator and collector (both are plain Python/pip installs, no compiled
-deps, so this should be quick), then build `docker-compose.yml` around the
-already-pulled images (`prom/prometheus`, `prom/alertmanager`,
-`grafana/grafana`, `grafana/loki`, `grafana/promtail`). Default the compose
-stack to a modest turbine count (e.g. 10) for fast local iteration; the
-50-turbine run is Phase 3's dedicated performance test, not the default
-compose setup.
+**Start of session 3: Phase 3, item 1** -- write the 50-turbine
+performance test script. Use `scripts/compose_smoke_test.sh` and the
+compose stack built in Phase 2 as the base: either scale the simulator's
+`--turbines` flag and the collector's target list to 50 inside a
+dedicated performance-test compose override, or drive it directly with
+the Python CLIs outside Docker (simpler, and avoids attributing Docker's
+own overhead to the numbers). Record real measured poll-latency
+percentiles and Prometheus load into `docs/performance.md`, explicit that
+it's a one-machine measurement, not a benchmark claim. Then
+`docs/ot-security.md` (IEC 62443 zones/conduits framing, already partly
+written as prose in the Architecture section above -- formalize it into
+its own doc). Finish with a CI workflow (pytest, plus
+`scripts/compose_smoke_test.sh` as the integration gate).
 
 STATUS: IN_PROGRESS

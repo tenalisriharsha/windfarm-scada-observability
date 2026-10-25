@@ -22,6 +22,43 @@ versus pending.
 
 ## Quick start
 
+### Full observability stack (docker compose)
+
+Requires Docker with Compose v2.
+
+```bash
+docker compose up -d --build
+```
+
+This builds and starts 10 simulated turbines, the collector, Prometheus,
+Alertmanager, Grafana, and Loki/Promtail:
+
+| Service      | URL                                        |
+| ------------ | ------------------------------------------- |
+| Grafana      | http://localhost:3000 (admin / admin)       |
+| Prometheus   | http://localhost:9090                       |
+| Alertmanager | http://localhost:9093                       |
+| Collector    | http://localhost:9200/metrics               |
+| Control API  | http://localhost:8080                       |
+
+Inject a fault and watch it propagate through metrics, the Grafana
+dashboard, and -- within a few seconds -- a firing Alertmanager alert with
+a linked runbook:
+
+```bash
+curl -X POST http://localhost:8080/turbines/2/faults \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "overspeed", "duration_s": 60}'
+```
+
+Run `scripts/compose_smoke_test.sh` to do this automatically end to end
+(builds, waits for metrics to flow, injects a fault, polls Alertmanager
+until it fires, tears everything down).
+
+Tear the stack down with `docker compose down`.
+
+### Running the Python pieces directly
+
 Requires Python 3.11+.
 
 ```bash
@@ -60,17 +97,26 @@ Run the test suite with `pytest`.
 - **Shared register map** (`windfarm.common`) is the single source of truth
   for the Modbus wire format, imported by both sides so they can't drift
   out of sync.
+- **Observability stack** (`docker-compose.yml`, `docker/`) wires the
+  collector's `/metrics` into Prometheus, which evaluates three alert
+  rules -- turbine overspeed, gearbox overheat, and a turbine gone silent
+  -- each annotated with a link to a runbook under
+  [`docs/runbooks/`](docs/runbooks/). Alertmanager receives the firing
+  alerts, Grafana renders a provisioned-as-code dashboard, and
+  Promtail/Loki collect container logs. Nothing here is clicked together
+  by hand: datasources, dashboards, and alert rules are all files in this
+  repo.
 
-The observability stack (Prometheus, Grafana, Alertmanager, Loki) and the
-performance/security documentation are tracked in [PROGRESS.md](PROGRESS.md)
-and land as the project progresses.
+The performance testing and OT-security documentation are tracked in
+[PROGRESS.md](PROGRESS.md) and land as the project progresses.
 
 ## Status
 
-Phase 1 (simulator + collector core, with tests) is complete and passing.
-The docker-compose observability stack, performance testing, OT-security
-notes, and CI are in progress -- see [PROGRESS.md](PROGRESS.md) for the
-current phase.
+Phase 1 (simulator + collector core) and Phase 2 (docker-compose
+observability stack: Prometheus, Grafana, Alertmanager, Loki, with alert
+rules and runbooks) are complete and passing. Performance testing,
+OT-security notes, CI, and preview screenshots are in progress -- see
+[PROGRESS.md](PROGRESS.md) for the current phase.
 
 ## License
 
