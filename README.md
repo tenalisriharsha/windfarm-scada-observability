@@ -1,5 +1,7 @@
 # Windfarm SCADA Observability
 
+[![CI](https://github.com/tenalisriharsha/windfarm-scada-observability/actions/workflows/ci.yml/badge.svg)](https://github.com/tenalisriharsha/windfarm-scada-observability/actions/workflows/ci.yml)
+
 A simulated wind farm SCADA environment for learning and demonstrating
 industrial-monitoring patterns: Modbus TCP turbine simulators, a strictly
 read-only polling collector, and a Prometheus/Grafana/Alertmanager/Loki
@@ -13,12 +15,6 @@ be built when reliability matters: per-request timeouts, retry with
 backoff, stale-data detection, metrics that reflect reachability (not just
 the last value seen), and alerting tied to runbooks instead of bare
 thresholds.
-
-## Project Status
-
-This project is under active development. See [PROGRESS.md](PROGRESS.md)
-for the full architecture, the phased build plan, and exactly what's done
-versus pending.
 
 ## Quick start
 
@@ -79,7 +75,12 @@ curl -X POST http://localhost:8080/turbines/2/faults \
   -d '{"type": "overspeed", "duration_s": 30}'
 ```
 
-Run the test suite with `pytest`.
+Run the test suite with `pytest`. Run the end-to-end compose smoke test
+(the same check CI runs as its integration gate) with
+`scripts/compose_smoke_test.sh`. Run the 50-turbine latency/scrape-load
+measurement with `scripts/perf_test.py` -- see
+[docs/performance.md](docs/performance.md) for real measured numbers from
+that script.
 
 ## How it works
 
@@ -106,17 +107,23 @@ Run the test suite with `pytest`.
   Promtail/Loki collect container logs. Nothing here is clicked together
   by hand: datasources, dashboards, and alert rules are all files in this
   repo.
-
-The performance testing and OT-security documentation are tracked in
-[PROGRESS.md](PROGRESS.md) and land as the project progresses.
+- **Performance** (`scripts/perf_test.py`, [docs/performance.md](docs/performance.md))
+  measures real poll latency (driving the collector's actual poll code
+  against a real simulator subprocess) and real Prometheus scrape load
+  (a temporary Prometheus container scraping a real collector process),
+  with the raw results from a 50-turbine run checked in for reference.
+- **OT security design notes** ([docs/ot-security.md](docs/ot-security.md))
+  frame the simulator/collector split as IEC 62443 zones and conduits,
+  and explain why the collector's Modbus path is strictly read-only.
 
 ## Status
 
-Phase 1 (simulator + collector core) and Phase 2 (docker-compose
-observability stack: Prometheus, Grafana, Alertmanager, Loki, with alert
-rules and runbooks) are complete and passing. Performance testing,
-OT-security notes, CI, and preview screenshots are in progress -- see
-[PROGRESS.md](PROGRESS.md) for the current phase.
+All core phases are complete and passing: the simulator, the read-only
+collector, the docker-compose observability stack (Prometheus, Grafana,
+Alertmanager, Loki, alert rules with runbooks), the 50-turbine
+performance measurement, the OT-security design notes, and CI (unit
+tests plus the compose smoke test as an integration gate). See
+[PROGRESS.md](PROGRESS.md) for the phase-by-phase build history.
 
 ## License
 

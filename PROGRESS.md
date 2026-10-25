@@ -118,17 +118,34 @@ collector experiences a genuine client-side timeout, not a fabricated error.
       tear down). Runs clean -- no containers left behind on success or
       failure (`trap cleanup EXIT`). This will be the Phase 3 CI gate.
 
-### Phase 3 — Performance test, OT-security note, CI
-- [ ] 50-turbine performance test script: measures poll latency percentiles
-      and Prometheus scrape/query load.
-- [ ] `docs/performance.md` with the real measured numbers from that run,
-      stating plainly it was measured on one Mac, not a production
-      benchmark.
-- [ ] `docs/ot-security.md`: IEC 62443 zones/conduits framing, why the
-      collector is strictly read-only, IT/OT separation -- written as
-      design intent for a simulation, not a certification claim.
-- [ ] CI pipeline: pytest, plus a docker-compose smoke test that injects a
-      fault and polls the Alertmanager API until the matching alert fires.
+### Phase 3 — Performance test, OT-security note, CI — DONE
+- [x] `scripts/perf_test.py`: starts a real simulator subprocess and drives
+      real `TurbinePoller` instances against it in-process to measure exact
+      per-poll latency (no histogram-bucket estimation), then starts a real
+      collector subprocess and a temporary, real `prom/prometheus` container
+      to measure scrape payload size, scrape duration, and PromQL query
+      latency. Cleans up its subprocess and container unconditionally.
+- [x] `docs/performance.md` with the real measured numbers from a 50-turbine
+      run (7,350 polls, 0 failures, p99 5.8ms poll latency, ~100KB scrape
+      payload, ~31ms Prometheus scrape duration), explicit that it's a
+      one-machine measurement, not a production benchmark. Raw JSON kept at
+      `docs/performance-50-turbines.json`.
+- [x] `docs/ot-security.md`: IEC 62443 zones/conduits framing (process/OT
+      zone vs. monitoring/IT zone, the Modbus read-only conduit, the
+      test-harness-only control API as a deliberate, isolated zone
+      violation), why the collector is strictly read-only, IT/OT separation
+      in the compose topology, and an explicit list of what a real
+      deployment would still need beyond this project.
+- [x] CI pipeline (`.github/workflows/ci.yml`): a `test` job running
+      `pytest -v` on Python 3.12, then a `compose-smoke-test` job running
+      `scripts/compose_smoke_test.sh` as the integration gate, with
+      container logs dumped on failure.
+- [x] 6 new unit tests for the perf script's percentile math
+      (`tests/test_perf_test.py`); full suite now 57 tests passing.
+- [x] Verified `scripts/compose_smoke_test.sh` end to end again on a clean
+      build: builds, waits for a healthy Prometheus target and provisioned
+      dashboard, injects an overspeed fault, polls Alertmanager until it
+      fires, clears the fault, tears down with no containers left behind.
 
 ### Phase 4 — Previews, polish, final docs
 - [ ] Playwright captures of the Grafana dashboard: healthy farm, then with
@@ -145,18 +162,36 @@ collector experiences a genuine client-side timeout, not a fabricated error.
 
 ## Resume point
 
-**Start of session 3: Phase 3, item 1** -- write the 50-turbine
-performance test script. Use `scripts/compose_smoke_test.sh` and the
-compose stack built in Phase 2 as the base: either scale the simulator's
-`--turbines` flag and the collector's target list to 50 inside a
-dedicated performance-test compose override, or drive it directly with
-the Python CLIs outside Docker (simpler, and avoids attributing Docker's
-own overhead to the numbers). Record real measured poll-latency
-percentiles and Prometheus load into `docs/performance.md`, explicit that
-it's a one-machine measurement, not a benchmark claim. Then
-`docs/ot-security.md` (IEC 62443 zones/conduits framing, already partly
-written as prose in the Architecture section above -- formalize it into
-its own doc). Finish with a CI workflow (pytest, plus
-`scripts/compose_smoke_test.sh` as the integration gate).
+**Start of session 4: Phase 4** -- previews, polish, final docs. This is
+the last session; everything must end COMPLETE.
+
+1. Capture the Grafana "Windfarm Overview" dashboard with Playwright:
+   once showing a healthy farm, once with an injected overspeed fault
+   visible on the per-turbine panels (`docker compose up -d --build`,
+   wait for provisioning the same way `scripts/compose_smoke_test.sh`
+   does, inject via the control API, screenshot, clear the fault, tear
+   down).
+2. Capture the Alertmanager UI (`http://localhost:9093`) showing the
+   `TurbineOverspeed` alert `active`.
+3. Capture terminal output from real runs (not hand-typed) for: the
+   simulator CLI starting up, the collector CLI starting up and polling,
+   and `scripts/perf_test.py` producing its JSON summary -- render each
+   into a dark terminal-style HTML template and screenshot that, per the
+   project rules (exact command in the prompt line, no edited output,
+   `... (output truncated)` for anything abridged).
+4. Look at every screenshot before embedding it; re-capture anything
+   blank, broken, or showing an error overlay.
+5. Add a "Preview" section near the top of `README.md` embedding all of
+   them (at least 4-5, more if there are genuinely distinct views worth
+   showing), then do a final README pass: quick start, preview, a short
+   factual Status section near the bottom, license. No build-diary
+   language ("tonight", "session N", etc.) -- that belongs in this file.
+6. Write `DAILY_REPORT.md` summarizing all 4 sessions: what was built,
+   test results, known limitations (see `docs/performance.md`'s
+   Limitations section and `docs/ot-security.md`'s closing section for
+   source material), future ideas.
+7. Set `STATUS: COMPLETE` below once the full test suite is green, the
+   compose smoke test passes, README is final with Preview section in
+   place, and `DAILY_REPORT.md` exists.
 
 STATUS: IN_PROGRESS
