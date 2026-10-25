@@ -16,6 +16,25 @@ backoff, stale-data detection, metrics that reflect reachability (not just
 the last value seen), and alerting tied to runbooks instead of bare
 thresholds.
 
+## Preview
+
+| | |
+| --- | --- |
+| **Grafana — healthy farm** (10/10 turbines up, 0 faults) | **Grafana — overspeed fault injected** (turbine 2 red-flagged, rotor speed spike) |
+| ![Grafana dashboard showing a healthy 10-turbine farm](docs/screenshots/grafana-dashboard-healthy.png) | ![Grafana dashboard showing turbine 2 in an overspeed fault state](docs/screenshots/grafana-dashboard-overspeed-fault.png) |
+
+**Alertmanager — `TurbineOverspeed` firing**, with description, summary, and a link to the runbook:
+
+![Alertmanager showing the TurbineOverspeed alert active with its annotations](docs/screenshots/alertmanager-turbineoverspeed.png)
+
+| **Simulator startup** | **Collector polling + live metrics** |
+| --- | --- |
+| ![Terminal: simulator CLI starting a 5-turbine Modbus TCP server](docs/screenshots/terminal-simulator-startup.png) | ![Terminal: collector CLI polling and the resulting Prometheus metrics](docs/screenshots/terminal-collector-metrics.png) |
+
+**`scripts/perf_test.py`** driving real poll latency and Prometheus scrape-load measurements:
+
+![Terminal: perf_test.py JSON summary of poll latency and scrape load](docs/screenshots/terminal-perf-test.png)
+
 ## Quick start
 
 ### Full observability stack (docker compose)
