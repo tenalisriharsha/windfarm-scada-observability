@@ -1,0 +1,29 @@
+[project]
+name = "windfarm-scada-observability"
+version = "0.1.0"
+description = "Simulated wind farm SCADA environment with a read-only Modbus collector and Prometheus/Grafana observability stack"
+requires-python = ">=3.11"
+dependencies = [
+    "pymodbus==3.8.6",
+    "aiohttp>=3.9",
+    "prometheus-client>=0.20",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-aiohttp>=1.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
