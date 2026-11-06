@@ -8,6 +8,7 @@ collector would ever be able to do to a turbine.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict
 
 from aiohttp import web
@@ -52,7 +53,12 @@ def build_control_app(turbine_states: dict[int, TurbineState]) -> web.Applicatio
         except ValueError as exc:
             raise web.HTTPBadRequest(text=str(exc)) from exc
         duration_s = body.get("duration_s", DEFAULT_FAULT_DURATION_S)
-        if duration_s is not None and (not isinstance(duration_s, (int, float)) or duration_s <= 0):
+        if duration_s is not None and (
+            not isinstance(duration_s, (int, float))
+            or isinstance(duration_s, bool)
+            or not math.isfinite(duration_s)
+            or duration_s <= 0
+        ):
             raise web.HTTPBadRequest(text="duration_s must be a positive number, or null for indefinite")
         state.inject_fault(fault_type, duration_s)
         return web.json_response(_readout_json(state))
