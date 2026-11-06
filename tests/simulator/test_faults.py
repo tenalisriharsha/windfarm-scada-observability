@@ -31,3 +31,9 @@ def test_active_fault_expiry():
 def test_active_fault_without_expiry_never_expires():
     fault = ActiveFault(fault_type=FaultType.COMM_LOSS, started_at=0.0, expires_at=None)
     assert fault.is_expired(1_000_000.0) is False
+
+@pytest.mark.parametrize("invalid", [5, ["overspeed"], {"a": 1}, True])
+def test_fault_type_from_name_rejects_non_string_type(invalid):
+    with pytest.raises(ValueError, match="fault type must be a string"):
+        fault_type_from_name(invalid)
+

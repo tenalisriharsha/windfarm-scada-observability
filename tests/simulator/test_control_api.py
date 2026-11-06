@@ -65,6 +65,15 @@ async def test_inject_fault_unknown_type_is_400(aiohttp_client, states):
     assert resp.status == 400
 
 
+@pytest.mark.parametrize("invalid_type", [5, ["overspeed"], {"a": 1}, True])
+async def test_inject_fault_non_string_type_is_400(aiohttp_client, states, invalid_type):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post("/turbines/1/faults", json={"type": invalid_type})
+    assert resp.status == 400
+    text = await resp.text()
+    assert "fault type must be a string" in text
+
+
 async def test_inject_fault_invalid_duration_is_400(aiohttp_client, states):
     client = await aiohttp_client(build_control_app(states))
     resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": -5})

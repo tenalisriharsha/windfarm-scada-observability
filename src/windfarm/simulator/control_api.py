@@ -44,9 +44,9 @@ def build_control_app(turbine_states: dict[int, TurbineState]) -> web.Applicatio
             body = await request.json()
         except ValueError:
             body = {}
-        fault_name = body.get("type")
-        if not fault_name:
+        if "type" not in body or body["type"] is None or body["type"] == "":
             raise web.HTTPBadRequest(text='missing required field "type"')
+        fault_name = body["type"]
         try:
             fault_type = fault_type_from_name(fault_name)
         except ValueError as exc:

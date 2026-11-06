@@ -25,6 +25,8 @@ class ActiveFault:
 
 def fault_type_from_name(name: str) -> FaultType:
     """Resolve a fault type from a user-supplied string (CLI flag or JSON body)."""
+    if not isinstance(name, str):
+        raise ValueError(f"fault type must be a string, got {type(name).__name__}")
     key = name.strip().lower()
     try:
         return FAULT_NAME_TO_TYPE[key]
