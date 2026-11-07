@@ -39,7 +39,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def build_turbine_states(count: int, seed: int | None) -> dict[int, TurbineState]:
     states = {}
     for turbine_id in range(1, count + 1):
-        rng = random.Random(f"{seed}:{turbine_id}") if seed is not None else None
+        rng = random.Random(f"{seed}:{turbine_id}") if seed is not None else random.Random()
         states[turbine_id] = TurbineState(TurbineConfig(turbine_id=turbine_id), rng=rng)
     return states
 
