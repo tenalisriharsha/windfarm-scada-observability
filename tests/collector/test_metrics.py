@@ -37,3 +37,19 @@ def test_separate_registries_do_not_collide():
     # must not raise prometheus_client's duplicate-timeseries error.
     build_metrics(CollectorRegistry())
     build_metrics(CollectorRegistry())
+
+
+def test_up_help_text_describes_staleness_window_not_last_attempt():
+    # windfarm_turbine_up actually reflects whether a success landed within
+    # the configured staleness window (see poller._refresh_up_and_age), not
+    # whether the single most recent poll attempt succeeded. The HELP text
+    # must describe that real, window-based semantics instead of implying
+    # the gauge flips on every failed poll attempt.
+    registry = CollectorRegistry()
+    metrics = build_metrics(registry)
+
+    [up_metric] = metrics.up.describe()
+    help_text = up_metric.documentation.lower()
+
+    assert "most recent poll" not in help_text
+    assert "stale" in help_text or "window" in help_text
