@@ -34,7 +34,9 @@ def build_metrics(registry: CollectorRegistry) -> Metrics:
     return Metrics(
         up=Gauge(
             f"{NAMESPACE}_turbine_up",
-            "1 if the most recent poll of this turbine succeeded, else 0",
+            "1 if this turbine has been successfully polled within the "
+            "configured staleness window, else 0 "
+            "(see windfarm_turbine_last_seen_age_seconds)",
             labels,
             registry=registry,
         ),
