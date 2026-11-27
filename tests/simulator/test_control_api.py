@@ -65,10 +65,26 @@ async def test_inject_fault_unknown_type_is_400(aiohttp_client, states):
     assert resp.status == 400
 
 
-async def test_inject_fault_invalid_duration_is_400(aiohttp_client, states):
+@pytest.mark.parametrize("invalid_duration", [-5, 0, float("nan"), float("inf"), float("-inf"), True])
+async def test_inject_fault_invalid_duration_is_400(aiohttp_client, states, invalid_duration):
     client = await aiohttp_client(build_control_app(states))
-    resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": -5})
+    resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": invalid_duration})
     assert resp.status == 400
+    text = await resp.text()
+    assert "duration_s must be a positive number, or null for indefinite" in text
+
+
+@pytest.mark.parametrize("raw_token", ["NaN", "Infinity", "-Infinity"])
+async def test_inject_fault_raw_non_finite_duration_is_400(aiohttp_client, states, raw_token):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post(
+        "/turbines/1/faults",
+        data=f'{{"type": "overspeed", "duration_s": {raw_token}}}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status == 400
+    text = await resp.text()
+    assert "duration_s must be a positive number, or null for indefinite" in text
 
 
 async def test_inject_fault_on_unknown_turbine_is_404(aiohttp_client, states):
