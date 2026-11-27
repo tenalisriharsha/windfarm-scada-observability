@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from windfarm.simulator.control_api import build_control_app
@@ -69,6 +71,24 @@ async def test_inject_fault_invalid_duration_is_400(aiohttp_client, states):
     client = await aiohttp_client(build_control_app(states))
     resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": -5})
     assert resp.status == 400
+
+
+@pytest.mark.parametrize("duration_s", [math.nan, math.inf, -math.inf])
+async def test_inject_fault_non_finite_duration_is_400(aiohttp_client, states, duration_s):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": duration_s})
+    assert resp.status == 400
+    body = await resp.text()
+    assert "duration_s must be a positive number, or null for indefinite" in body
+    assert states[1].active_fault is None
+
+
+async def test_inject_fault_response_never_contains_non_finite_json_tokens(aiohttp_client, states):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": math.inf})
+    raw_body = await resp.read()
+    assert b"Infinity" not in raw_body
+    assert b"NaN" not in raw_body
 
 
 async def test_inject_fault_on_unknown_turbine_is_404(aiohttp_client, states):
