@@ -81,10 +81,11 @@ class TurbineState:
         now = now if now is not None else time.monotonic()
         expires_at = now + duration_s if duration_s is not None else None
         self.active_fault = ActiveFault(fault_type=fault_type, started_at=now, expires_at=expires_at)
+        self._apply_fault_effects()
 
     def clear_fault(self) -> None:
         self.active_fault = None
-        self.comm_loss = False
+        self._apply_fault_effects()
 
     def _clear_expired_fault(self, now: float) -> None:
         if self.active_fault is not None and self.active_fault.is_expired(now):
@@ -112,6 +113,15 @@ class TurbineState:
         self.gearbox_temp_c += (target_temp - self.gearbox_temp_c) * GEARBOX_THERMAL_SMOOTHING
         self.gearbox_temp_c += self._rng.gauss(0.0, GEARBOX_NOISE_C)
 
+        self._apply_fault_effects()
+
+    def _apply_fault_effects(self) -> None:
+        """Recompute ``status`` and fault-forced readings from ``active_fault``.
+
+        Shared by ``tick()`` and by ``inject_fault()``/``clear_fault()`` so a
+        client reading the state right after a fault is injected or cleared
+        never sees ``status`` lag a tick behind ``active_fault``.
+        """
         self.comm_loss = False
         if self.active_fault is None:
             near_cutout = self.wind_speed_mps >= self.config.cut_out_wind_mps - HIGH_WIND_WARNING_MARGIN_MPS
