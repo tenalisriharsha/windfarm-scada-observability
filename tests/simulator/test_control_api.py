@@ -113,3 +113,45 @@ async def test_clear_fault(aiohttp_client, states):
     resp = await client.delete("/turbines/1/faults")
     assert resp.status == 200
     assert states[1].active_fault is None
+
+
+async def test_inject_overspeed_fault_status_matches_immediately(aiohttp_client, states):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post("/turbines/1/faults", json={"type": "overspeed", "duration_s": 30})
+    assert resp.status == 200
+    body = await resp.json()
+    assert body["active_fault"] == "overspeed"
+    assert body["status"] == "FAULT_OVERSPEED"
+
+    # No tick has run; a client reading the turbine right after injecting must
+    # not be told it's fine when a fault was just injected.
+    follow_up = await client.get("/turbines/1")
+    follow_up_body = await follow_up.json()
+    assert follow_up_body["active_fault"] == "overspeed"
+    assert follow_up_body["status"] == "FAULT_OVERSPEED"
+
+
+async def test_inject_overheating_fault_status_matches_immediately(aiohttp_client, states):
+    client = await aiohttp_client(build_control_app(states))
+    resp = await client.post("/turbines/1/faults", json={"type": "overheating", "duration_s": 30})
+    assert resp.status == 200
+    body = await resp.json()
+    assert body["active_fault"] == "overheating"
+    assert body["status"] == "FAULT_OVERHEAT"
+
+
+async def test_clear_fault_status_no_longer_fault_immediately(aiohttp_client, states):
+    client = await aiohttp_client(build_control_app(states))
+    await client.post("/turbines/1/faults", json={"type": "overheating", "duration_s": 30})
+    # Simulate the background physics loop having ticked at least once while
+    # the fault was active, so `status` actually reached the fault status
+    # before we clear it -- exercising the same stale-status gap in reverse.
+    states[1].tick(1.0)
+    assert states[1].status.name == "FAULT_OVERHEAT"
+
+    resp = await client.delete("/turbines/1/faults")
+    assert resp.status == 200
+    body = await resp.json()
+    assert body["active_fault"] is None
+    assert body["status"] != "FAULT_OVERHEAT"
+    assert body["status"] != "FAULT_OVERSPEED"
